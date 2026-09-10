@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Vulnerability Intelligence Dashboard
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     TOP BAR
+     ========================================================= -->
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+            V
+        </div>
+
+        <div>
+
+            <h1>
+                Vulnerability Intelligence
+            </h1>
+
+            <p>
+                Read-only upstream security monitoring
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="topbar-right">
+
+        <div
+            id="connectionStatus"
+            class="connection-status"
+        >
+            Loading...
+        </div>
+
+
+        <button
+            id="refreshButton"
+            class="refresh-button"
+            type="button"
+        >
+            Refresh
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- =========================================================
+     MAIN
+     ========================================================= -->
+
+<main class="container">
+
+
+<!-- =========================================================
+     LOADING
+     ========================================================= -->
+
+<section
+    id="loadingState"
+    class="state-card"
+>
+
+    <div class="spinner"></div>
+
+    <h2>
+        Loading vulnerability intelligence
+    </h2>
+
+    <p>
+        Reading the latest collector output...
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     ERROR
+     ========================================================= -->
+
+<section
+    id="errorState"
+    class="state-card error-state hidden"
+>
+
+    <div class="state-icon">
+        !
+    </div>
+
+    <h2>
+        Unable to load signals
+    </h2>
+
+    <p id="errorMessage">
+        Something went wrong.
+    </p>
+
+    <button
+        id="errorRetryButton"
+        class="primary-button"
+        type="button"
+    >
+        Retry
+    </button>
+
+</section>
+
+
+<!-- =========================================================
+     DASHBOARD
+     ========================================================= -->
+
+<section
+    id="dashboard"
+    class="hidden"
+>
+
+
+<!-- =========================================================
+     PAGE TITLE
+     ========================================================= -->
+
+<div class="section-heading">
+
+    <div>
+
+        <p class="eyebrow">
+            Security overview
+        </p>
+
+        <h2>
+            What needs attention?
+        </h2>
+
+        <p
+            id="generatedAt"
+            class="muted-text"
+        >
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     SUMMARY
+     ========================================================= -->
+
+<div class="summary-grid">
+
+
+    <div class="summary-card">
+
+        <div class="summary-label">
+            Dependencies
+        </div>
+
+        <div
+            id="dependencyCount"
+            class="summary-value"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div class="summary-card danger-card">
+
+        <div class="summary-label">
+            Critical
+        </div>
+
+        <div
+            id="criticalCount"
+            class="summary-value"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div class="summary-card warning-card">
+
+        <div class="summary-label">
+            High
+        </div>
+
+        <div
+            id="highCount"
+            class="summary-value"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div class="summary-card affected-card">
+
+        <div class="summary-label">
+            Affected versions
+        </div>
+
+        <div
+            id="affectedCount"
+            class="summary-value"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div class="summary-card purple-card">
+
+        <div class="summary-label">
+            Silent-window signals
+        </div>
+
+        <div
+            id="silentWindowCount"
+            class="summary-value"
+        >
+            0
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     HUMAN REVIEW SUMMARY
+     ========================================================= -->
+
+<div class="review-summary">
+
+
+    <div>
+
+        <span class="review-summary-label">
+            Human review
+        </span>
+
+        <span
+            id="pendingReviewCount"
+            class="review-summary-value"
+        >
+            0 pending
+        </span>
+
+    </div>
+
+
+    <div class="review-summary-right">
+
+        <span class="review-legend accepted">
+            ✓ Accepted
+        </span>
+
+        <span class="review-legend rejected">
+            ✕ Rejected
+        </span>
+
+        <span class="review-legend pending">
+            • Pending
+        </span>
+
+    </div>
+
+
+</div>
+
+
+<!-- =========================================================
+     TRUST EXPLANATION
+     ========================================================= -->
+
+<div class="trust-banner">
+
+    <div class="trust-banner-icon">
+        !
+    </div>
+
+    <div>
+
+        <strong>
+            Trust is calibrated by evidence source
+        </strong>
+
+        <p>
+            Public CVE records are shown as confirmed
+            external evidence. Upstream and silent-window
+            findings are shown as signals that require
+            human and/or AI investigation.
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     FILTERS
+     ========================================================= -->
+
+<section class="controls-panel">
+
+
+    <div class="control-group">
+
+        <label for="searchInput">
+            Search
+        </label>
+
+        <input
+            id="searchInput"
+            type="text"
+            placeholder="Search CVE, dependency, repository..."
+        >
+
+    </div>
+
+
+    <div class="control-group">
+
+        <label for="signalFilter">
+            Show
+        </label>
+
+        <select id="signalFilter">
+
+            <option value="all">
+                All signals
+            </option>
+
+            <option value="cve">
+                CVE matches
+            </option>
+
+            <option value="commit">
+                Security commits
+            </option>
+
+            <option value="silent">
+                Silent-window candidates
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="control-group">
+
+        <label for="reviewFilter">
+            Review status
+        </label>
+
+        <select id="reviewFilter">
+
+            <option value="all">
+                All review statuses
+            </option>
+
+            <option value="pending">
+                Pending
+            </option>
+
+            <option value="accepted">
+                Accepted
+            </option>
+
+            <option value="rejected">
+                Rejected
+            </option>
+
+        </select>
+
+    </div>
+
+
+</section>
+
+
+<!-- =========================================================
+     CVE MATCHES
+     ========================================================= -->
+
+<section
+    id="cveSection"
+    class="signal-section"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <p class="eyebrow">
+                Known vulnerabilities
+            </p>
+
+            <h2>
+                CVE matches
+            </h2>
+
+            <p class="section-description">
+                Public vulnerability records matched
+                against your dependency inventory.
+            </p>
+
+        </div>
+
+
+        <div
+            id="cveCount"
+            class="section-count"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div
+        id="cveList"
+        class="card-list"
+    >
+    </div>
+
+
+    <div
+        id="cveEmpty"
+        class="empty-state hidden"
+    >
+        No CVE matches found.
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     SECURITY COMMITS
+     ========================================================= -->
+
+<section
+    id="commitSection"
+    class="signal-section"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <p class="eyebrow">
+                Upstream activity
+            </p>
+
+            <h2>
+                Security-related commits
+            </h2>
+
+            <p class="section-description">
+                Upstream commits identified as
+                potentially security-related.
+            </p>
+
+        </div>
+
+
+        <div
+            id="commitCount"
+            class="section-count"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div
+        id="commitList"
+        class="card-list"
+    >
+    </div>
+
+
+    <div
+        id="commitEmpty"
+        class="empty-state hidden"
+    >
+        No security-related commits found.
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     SILENT WINDOW
+     ========================================================= -->
+
+<section
+    id="silentSection"
+    class="signal-section"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <p class="eyebrow">
+                Pre-CVE intelligence
+            </p>
+
+            <h2>
+                Silent-window candidates
+            </h2>
+
+            <p class="section-description">
+                Security-looking upstream changes
+                that do not explicitly reference a CVE.
+            </p>
+
+        </div>
+
+
+        <div
+            id="silentCount"
+            class="section-count"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <div
+        id="silentList"
+        class="card-list"
+    >
+    </div>
+
+
+    <div
+        id="silentEmpty"
+        class="empty-state hidden"
+    >
+        No silent-window candidates found.
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     COMPLETE JSON
+     ========================================================= -->
+
+<section class="raw-json-section">
+
+    <details>
+
+        <summary>
+            View complete JSON response
+        </summary>
+
+        <pre id="rawJson"></pre>
+
+    </details>
+
+</section>
+
+
+</section>
+
+
+</main>
+
+
+<script
+    src="{{ url_for('static', filename='app.js') }}"
+></script>
+
+
+</body>
+
+</html>

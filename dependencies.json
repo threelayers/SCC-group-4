@@ -1,0 +1,20 @@
+[
+  {
+    "name": "log4j-core",
+    "ecosystem": "maven",
+    "version": "2.14.1",
+    "github_repo": "apache/logging-log4j2"
+  },
+  {
+    "name": "lodash",
+    "ecosystem": "npm",
+    "version": "4.17.20",
+    "github_repo": "lodash/lodash"
+  },
+  {
+    "name": "requests",
+    "ecosystem": "pypi",
+    "version": "2.25.1",
+    "github_repo": "psf/requests"
+  }
+]

@@ -1,0 +1,20 @@
+# Environment variables / secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Generated collector output
+data/cves.json
+data/commits.json
+data/matched_signals.json
+data/run_summary.json
+data/decisions.json
