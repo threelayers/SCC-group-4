@@ -16,5 +16,11 @@
     "ecosystem": "pypi",
     "version": "2.25.1",
     "github_repo": "psf/requests"
+  },
+  {
+    "name": "scc-vulnerable-demo-app",
+    "ecosystem": "internal",
+    "version": "0.1.0",
+    "github_repo": "threelayers/scc-vulnerable-demo-app"
   }
 ]

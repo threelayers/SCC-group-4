@@ -389,27 +389,6 @@ class APIClient:
             }
         )
 
-        if GITHUB_TOKEN:
-
-            self.session.headers.update(
-                {
-                    "Authorization":
-                        f"Bearer {GITHUB_TOKEN}",
-
-                    "X-GitHub-Api-Version":
-                        GITHUB_API_VERSION,
-                }
-            )
-
-        if NVD_API_KEY:
-
-            self.session.headers.update(
-                {
-                    "apiKey":
-                        NVD_API_KEY,
-                }
-            )
-
     def get(
         self,
         url: str,
@@ -430,11 +409,54 @@ class APIClient:
 
             try:
 
+                request_headers = {}
+
+                if headers:
+
+                    request_headers.update(
+                        headers
+                    )
+
+                parsed_url = urlparse(
+                    url
+                )
+
+                host = (
+                    parsed_url.netloc
+                    .lower()
+                )
+
+                if (
+                    host == "api.github.com"
+                    and GITHUB_TOKEN
+                ):
+
+                    request_headers.update(
+                        {
+                            "Authorization":
+                                f"Bearer {GITHUB_TOKEN}",
+
+                            "X-GitHub-Api-Version":
+                                GITHUB_API_VERSION,
+                        }
+                    )
+
+                if (
+                    host.endswith(
+                        "nvd.nist.gov"
+                    )
+                    and NVD_API_KEY
+                ):
+
+                    request_headers[
+                        "apiKey"
+                    ] = NVD_API_KEY
+
                 response = (
                     self.session.get(
                         url,
                         params=params,
-                        headers=headers,
+                        headers=request_headers,
                         timeout=REQUEST_TIMEOUT,
                     )
                 )
@@ -2006,11 +2028,11 @@ def match_cve_to_dependency(
 
         relevance = "low"
 
-    return {
-        "cve_id":
-            cve.get(
-                "cve_id"
-            ),
+        return {
+            "cve_id":
+                cve.get(
+                    "cve_id"
+                ),
 
         "dependency": {
             "name":
@@ -2046,6 +2068,11 @@ def match_cve_to_dependency(
         },
 
         "cve": {
+            "cve_id":
+                cve.get(
+                    "cve_id"
+                ),
+
             "description":
                 cve.get(
                     "description"

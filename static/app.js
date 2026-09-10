@@ -91,6 +91,7 @@ function cveSignalId(
     return (
         "cve:"
         + (
+            match.cve_id ||
             cve.cve_id ||
             "unknown"
         )
@@ -130,6 +131,21 @@ function silentSignalId(
             match.commit_sha ||
             "unknown"
         )
+    );
+}
+
+
+function getCveId(
+    match
+) {
+
+    const cve =
+        match.cve || {};
+
+    return (
+        match.cve_id ||
+        cve.cve_id ||
+        "Unknown CVE"
     );
 }
 
@@ -219,6 +235,126 @@ async function loadDashboard() {
             $("connectionStatus"),
             "Error"
         );
+    }
+}
+
+
+async function collectLatest() {
+
+    const button =
+        $("collectButton");
+
+    button.disabled =
+        true;
+
+    button.textContent =
+        "Collecting...";
+
+    setText(
+        $("connectionStatus"),
+        "Collecting"
+    );
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/collect",
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+
+                    body:
+                        JSON.stringify(
+                            {
+                                days:
+                                    1,
+
+                                commit_days:
+                                    1,
+
+                                commit_limit:
+                                    20,
+                            }
+                        ),
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Collection failed."
+            );
+        }
+
+        dashboardData = {
+            signals:
+                data.signals,
+
+            summary:
+                data.summary,
+
+            decisions:
+                (
+                    dashboardData
+                    && dashboardData.decisions
+                )
+                || {},
+        };
+
+        renderDashboard(
+            dashboardData
+        );
+
+        hide(
+            $("loadingState")
+        );
+
+        hide(
+            $("errorState")
+        );
+
+        show(
+            $("dashboard")
+        );
+
+        setText(
+            $("connectionStatus"),
+            "Live"
+        );
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+        alert(
+            "Could not collect latest data:\n\n"
+            + error.message
+        );
+
+        setText(
+            $("connectionStatus"),
+            "Error"
+        );
+
+    } finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            "Collect latest";
     }
 }
 
@@ -1060,8 +1196,9 @@ function buildCveCard(
     topline.appendChild(
         createTextElement(
             "span",
-            cve.cve_id
-            || "Unknown CVE",
+            getCveId(
+                match
+            ),
             "signal-title"
         )
     );
@@ -1381,7 +1518,9 @@ function buildCveDetails(
     appendDetailRow(
         cvePanel,
         "CVE",
-        cve.cve_id
+        getCveId(
+            match
+        )
     );
 
 
@@ -3335,6 +3474,13 @@ $("refreshButton")
     .addEventListener(
         "click",
         loadDashboard
+    );
+
+
+$("collectButton")
+    .addEventListener(
+        "click",
+        collectLatest
     );
 
 

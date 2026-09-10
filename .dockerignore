@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+node_modules/
+data/
+vulnerable-app/.git

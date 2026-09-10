@@ -137,6 +137,7 @@ button {
 }
 
 .refresh-button,
+.collect-button,
 .primary-button {
     border: 0;
 
@@ -156,10 +157,27 @@ button {
 }
 
 .refresh-button:hover,
+.collect-button:hover,
 .primary-button:hover {
     transform: translateY(-1px);
 
     opacity: 0.9;
+}
+
+.collect-button {
+    border: 1px solid #172033;
+
+    background: #ffffff;
+
+    color: #172033;
+}
+
+.collect-button:disabled {
+    cursor: wait;
+
+    opacity: 0.65;
+
+    transform: none;
 }
 
 

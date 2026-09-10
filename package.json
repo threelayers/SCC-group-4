@@ -1,0 +1,15 @@
+{
+  "name": "scc-vulnerability-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "get-cves": "node tools/get-cves.js",
+    "get-cve": "node tools/get-cves.js",
+    "seed-demo-cve": "node tools/seed-demo-cve.js",
+    "gitcommit": "node tools/gitcommit.js",
+    "security-check": "node tools/security-check.js --staged",
+    "install-hooks": "node tools/install-hooks.js",
+    "demo": "docker compose up --build"
+  }
+}
