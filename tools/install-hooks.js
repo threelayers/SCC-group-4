@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 
 const source = ".githooks/pre-push";
 const target = ".git/hooks/pre-push";
+const safeDirectory = process.cwd().replaceAll("\\", "/");
 
 mkdirSync(dirname(target), {
   recursive: true,
@@ -13,15 +14,28 @@ copyFileSync(source, target);
 chmodSync(source, 0o755);
 chmodSync(target, 0o755);
 
-const config = spawnSync("git", [
+const trust = spawnSync("git", [
   "-c",
-  `safe.directory=${process.cwd().replaceAll("\\", "/")}`,
+  `safe.directory=${safeDirectory}`,
+  "config",
+  "--global",
+  "--add",
+  "safe.directory",
+  safeDirectory,
+], {
+  stdio: "inherit",
+});
+
+if (trust.status !== 0) {
+  process.exit(trust.status ?? 1);
+}
+
+const config = spawnSync("git", [
   "config",
   "core.hooksPath",
   ".githooks",
 ], {
   stdio: "inherit",
-  shell: process.platform === "win32",
 });
 
 if (config.status !== 0) {

@@ -18,7 +18,6 @@ const check = spawnSync(
   ],
   {
     stdio: "inherit",
-    shell: process.platform === "win32",
   }
 );
 
@@ -28,7 +27,6 @@ if (check.status !== 0) {
 
 const commit = spawnSync("git", ["commit", "-m", message], {
   stdio: "inherit",
-  shell: process.platform === "win32",
 });
 
 process.exit(commit.status ?? 1);
