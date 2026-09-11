@@ -39,6 +39,10 @@ RUN_SUMMARY_FILE = (
     DATA_DIR / "run_summary.json"
 )
 
+COLLECTION_STATE_FILE = (
+    DATA_DIR / "collection_state.json"
+)
+
 DEFAULT_COLLECT_DAYS = 1
 DEFAULT_COMMIT_DAYS = 1
 DEFAULT_COMMIT_LIMIT = 20
@@ -254,6 +258,146 @@ def parse_positive_int(
         )
 
     return parsed
+
+
+def apply_incremental_alert_filter(
+    signals: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    state = load_json_file(
+        COLLECTION_STATE_FILE,
+        {},
+    )
+
+    seen_cve_ids = set(
+        state.get(
+            "seen_cve_ids",
+            [],
+        )
+    )
+
+    seen_commit_shas = set(
+        state.get(
+            "seen_commit_shas",
+            [],
+        )
+    )
+
+    cve_matches = signals.get(
+        "cve_dependency_matches",
+        [],
+    )
+
+    commit_matches = signals.get(
+        "upstream_commit_matches",
+        [],
+    )
+
+    silent_candidates = signals.get(
+        "silent_window_candidates",
+        [],
+    )
+
+    new_cve_matches = [
+        match
+        for match in cve_matches
+        if str(
+            match.get(
+                "cve_id",
+                "",
+            )
+        ).upper() not in seen_cve_ids
+    ]
+
+    new_commit_matches = [
+        match
+        for match in commit_matches
+        if str(
+            match.get(
+                "commit",
+                {},
+            ).get(
+                "sha",
+                "",
+            )
+        ) not in seen_commit_shas
+    ]
+
+    new_silent_candidates = [
+        candidate
+        for candidate in silent_candidates
+        if str(
+            candidate.get(
+                "commit_sha",
+                "",
+            )
+        ) not in seen_commit_shas
+    ]
+
+    all_cve_ids = seen_cve_ids | {
+        str(
+            match.get(
+                "cve_id",
+                "",
+            )
+        ).upper()
+        for match in cve_matches
+        if match.get(
+            "cve_id"
+        )
+    }
+
+    all_commit_shas = seen_commit_shas | {
+        str(
+            match.get(
+                "commit",
+                {},
+            ).get(
+                "sha",
+                "",
+            )
+        )
+        for match in commit_matches
+        if match.get(
+            "commit",
+            {},
+        ).get(
+            "sha"
+        )
+    } | {
+        str(
+            candidate.get(
+                "commit_sha",
+                "",
+            )
+        )
+        for candidate in silent_candidates
+        if candidate.get(
+            "commit_sha"
+        )
+    }
+
+    signals["cve_dependency_matches"] = new_cve_matches
+    signals["upstream_commit_matches"] = new_commit_matches
+    signals["silent_window_candidates"] = new_silent_candidates
+    signals["incremental_collection"] = {
+        "new_cve_matches": len(new_cve_matches),
+        "new_commit_matches": len(new_commit_matches),
+        "new_silent_window_candidates": len(new_silent_candidates),
+        "previously_seen_cve_ids": len(seen_cve_ids),
+        "previously_seen_commit_shas": len(seen_commit_shas),
+    }
+
+    save_json_file(
+        COLLECTION_STATE_FILE,
+        {
+            "last_run_at": utc_now_iso(),
+            "seen_cve_ids": sorted(all_cve_ids),
+            "seen_commit_shas": sorted(all_commit_shas),
+        },
+    )
+
+    return signals
 
 
 def build_demo_seeded_cve(
@@ -825,11 +969,24 @@ def api_collect():
 
     try:
 
+        collection_state = load_json_file(
+            COLLECTION_STATE_FILE,
+            {},
+        )
+
+        seen_commit_shas = set(
+            collection_state.get(
+                "seen_commit_shas",
+                [],
+            )
+        )
+
         run_real_collection(
             cve_days=cve_days,
             commit_days=commit_days,
             commit_limit=commit_limit,
             max_cves=max_cves,
+            seen_commit_shas=seen_commit_shas,
         )
 
         apply_demo_seed()
@@ -844,6 +1001,15 @@ def api_collect():
                 ),
                 500,
             )
+
+        signals = apply_incremental_alert_filter(
+            signals
+        )
+
+        save_json_file(
+            SIGNALS_FILE,
+            signals,
+        )
 
         return jsonify(
             {

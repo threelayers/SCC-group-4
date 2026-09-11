@@ -18,3 +18,4 @@ data/commits.json
 data/matched_signals.json
 data/run_summary.json
 data/decisions.json
+data/collection_state.json

@@ -1192,6 +1192,7 @@ class GitHubCollector:
         repository: str,
         days: int = DEFAULT_COMMIT_DAYS,
         limit: int = DEFAULT_COMMIT_LIMIT,
+        exclude_shas: Optional[set[str]] = None,
     ) -> List[Dict[str, Any]]:
 
         repository = normalize_repo_name(
@@ -1269,6 +1270,9 @@ class GitHubCollector:
             )
 
             if not sha:
+                continue
+
+            if exclude_shas and sha in exclude_shas:
                 continue
 
             detail = (
@@ -3165,6 +3169,7 @@ def run_real_collection(
     commit_days: int,
     commit_limit: int,
     max_cves: int,
+    seen_commit_shas: Optional[set[str]] = None,
 ) -> None:
 
     start_time = utc_now()
@@ -3296,6 +3301,7 @@ def run_real_collection(
                     repository=repository,
                     days=commit_days,
                     limit=commit_limit,
+                    exclude_shas=seen_commit_shas,
                 )
             )
 
